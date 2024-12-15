@@ -1,0 +1,31 @@
+name: Kubernetes Deployment
+
+on:
+  push:
+    branches:
+      - main  # Trigger this action on push to the 'main' branch
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Set up Kubernetes credentials
+      run: |
+        echo "$K8S_KUBE_CONFIG" | base64 --decode > ~/.kube/config
+      env:
+        K8S_KUBE_CONFIG: ${{ secrets.K8S_KUBE_CONFIG }}
+
+    - name: Deploy pod to Kubernetes
+      run: |
+        kubectl apply -f k8s/pod.yaml  # Path to your pod configuration file
+        kubectl get pods  # List all pods to confirm the pod has been created
+
+    - name: Verify the pod status
+      run: |
+        kubectl wait --for=condition=available --timeout=600s deployment/your-deployment-name
+        kubectl get pods
